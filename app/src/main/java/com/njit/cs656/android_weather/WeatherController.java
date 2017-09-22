@@ -83,12 +83,27 @@ public class WeatherController extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         Log.d("Weather", "onResume() called");
-        Log.d("Weather", "Getting weather for current location");
-        getWeatherForCurrentLocation();
+        Intent myIntent = getIntent();
+        String city = myIntent.getStringExtra("City");
+
+        // If city is not empty get the weather fro the city
+        if(city != null) {
+            getWeatherForNewCity(city);
+        } else {
+            Log.d("Weather", "Getting weather for current location");
+            getWeatherForCurrentLocation();
+        }
     }
 
 
     // TODO: Add getWeatherForNewCity(String city) here:
+    private void getWeatherForNewCity(String city) {
+
+        RequestParams params = new RequestParams();
+        params.put("q", city);
+        params.put("appid", APP_ID);
+        getWeatherData(params);
+    }
 
 
     // TODO: Add getWeatherForCurrentLocation() here:
@@ -109,7 +124,7 @@ public class WeatherController extends AppCompatActivity {
                 params.put("lat", latitude);
                 params.put("lon", longitude);
                 params.put("appid", APP_ID);
-                letsDoSomeNetworking(params);
+                getWeatherData(params);
 
             }
 
@@ -166,8 +181,8 @@ public class WeatherController extends AppCompatActivity {
         }
     }
 
-    // TODO: Add letsDoSomeNetworking(RequestParams params) here:
-    private void letsDoSomeNetworking(RequestParams params) {
+
+    private void getWeatherData(RequestParams params) {
         AsyncHttpClient client = new AsyncHttpClient();
         client.get(WEATHER_URL, params, new JsonHttpResponseHandler() {
             @Override
@@ -188,8 +203,6 @@ public class WeatherController extends AppCompatActivity {
         });
     }
 
-
-    // TODO: Add updateUI() here:
     private void updateUI(WeatherDataModel weather) {
         mTemperatureLabel.setText(weather.getTemperature());
         mCityLabel.setText(weather.getCity());
@@ -198,9 +211,13 @@ public class WeatherController extends AppCompatActivity {
         mWeatherImage.setImageResource(resourceID);
     }
 
+    @Override
+    protected void onPause() {
+        super.onPause();
 
-    // TODO: Add onPause() here:
-
-
+        if(mLocationListener != null) {
+            mLocationManager.removeUpdates(mLocationListener);
+        }
+    }
 
 }
