@@ -17,6 +17,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -28,20 +29,27 @@ import org.json.JSONObject;
 
 import cz.msebera.android.httpclient.Header;
 
+import static android.icu.lang.UCharacter.GraphemeClusterBreak.V;
+import static android.provider.UserDictionary.Words.APP_ID;
+import static com.njit.cs656.android_weather.R.id.changeCityButton;
+
 
 public class WeatherController extends AppCompatActivity {
+
+    // App ID to use OpenWeather data
+    //final String APP_ID = "e72ca729af228beabd5d20e3b7749713";
+    final String API_KEY = "4abae86bf8950a7daddeaabe5243f751";
+
 
     // Constants:
     final int REQUEST_CODE = 234;
     final String WEATHER_URL = "http://api.openweathermap.org/data/2.5/weather";
-    // App ID to use OpenWeather data
-    final String APP_ID = "e72ca729af228beabd5d20e3b7749713";
+
     // Time between location updates (5000 milliseconds or 5 seconds)
     final long MIN_TIME = 5000;
     // Distance between location updates (1000m or 1km)
     final float MIN_DISTANCE = 1000;
 
-    // TODO: Set LOCATION_PROVIDER here:
     String LOCATION_PROVIDER = LocationManager.GPS_PROVIDER;
 
 
@@ -49,8 +57,8 @@ public class WeatherController extends AppCompatActivity {
     TextView mCityLabel;
     ImageView mWeatherImage;
     TextView mTemperatureLabel;
+    ProgressBar mProgressBar;
 
-    // TODO: Declare a LocationManager and a LocationListener here:
     LocationManager mLocationManager;
     LocationListener mLocationListener;
 
@@ -63,10 +71,10 @@ public class WeatherController extends AppCompatActivity {
         mCityLabel = (TextView) findViewById(R.id.locationTV);
         mWeatherImage = (ImageView) findViewById(R.id.weatherSymbolIV);
         mTemperatureLabel = (TextView) findViewById(R.id.tempTV);
+        mProgressBar = (ProgressBar) findViewById(R.id.loadingProgressBar);
+
         ImageButton changeCityButton = (ImageButton) findViewById(R.id.changeCityButton);
 
-
-        // TODO: Add an OnClickListener to the changeCityButton here:
         changeCityButton.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
@@ -77,8 +85,6 @@ public class WeatherController extends AppCompatActivity {
 
     }
 
-
-    // TODO: Add onResume() here:
     @Override
     protected void onResume() {
         super.onResume();
@@ -89,24 +95,21 @@ public class WeatherController extends AppCompatActivity {
         // If city is not empty get the weather fro the city
         if(city != null) {
             getWeatherForNewCity(city);
+
         } else {
             Log.d("Weather", "Getting weather for current location");
             getWeatherForCurrentLocation();
         }
     }
 
-
-    // TODO: Add getWeatherForNewCity(String city) here:
-    private void getWeatherForNewCity(String city) {
+        private void getWeatherForNewCity(String city) {
 
         RequestParams params = new RequestParams();
         params.put("q", city);
-        params.put("appid", APP_ID);
+        params.put("appid", API_KEY);
         getWeatherData(params);
     }
 
-
-    // TODO: Add getWeatherForCurrentLocation() here:
     private void getWeatherForCurrentLocation() {
         mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 
@@ -121,9 +124,9 @@ public class WeatherController extends AppCompatActivity {
                 Log.d("Weather", "latitude is: " + latitude);
 
                 RequestParams params = new RequestParams();
+                params.put("appid", API_KEY);
                 params.put("lat", latitude);
                 params.put("lon", longitude);
-                params.put("appid", APP_ID);
                 getWeatherData(params);
 
             }
@@ -145,14 +148,6 @@ public class WeatherController extends AppCompatActivity {
         };
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-
             ActivityCompat.requestPermissions(this,
                     new String[] {Manifest.permission.ACCESS_FINE_LOCATION},
                     REQUEST_CODE);
@@ -183,6 +178,9 @@ public class WeatherController extends AppCompatActivity {
 
 
     private void getWeatherData(RequestParams params) {
+
+        mProgressBar.setVisibility(View.VISIBLE);
+
         AsyncHttpClient client = new AsyncHttpClient();
         client.get(WEATHER_URL, params, new JsonHttpResponseHandler() {
             @Override
@@ -190,6 +188,9 @@ public class WeatherController extends AppCompatActivity {
                 Log.d("Weather", "Success! JSON " + response.toString());
 
                 WeatherDataModel weatherData = WeatherDataModel.fromJson(response);
+
+                mProgressBar.setVisibility(View.INVISIBLE);
+
                 updateUI(weatherData);
 
             }
